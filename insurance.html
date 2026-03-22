@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>现金流规划助手 · 保险分析</title>
+<link rel="stylesheet" href="assets/style.css"/>
+</head>
+<body>
+
+<nav class="nav">
+  <a class="nav-brand" href="index.html">
+    <div class="nav-logo">💎</div>
+    <span class="nav-title">现金流规划助手</span>
+  </a>
+  <div class="nav-links">
+    <a class="nav-link" data-page="index" href="index.html">🏠 首页</a>
+    <a class="nav-link" data-page="clients" href="clients.html">📋 客户档案</a>
+    <a class="nav-link" data-page="comparison" href="comparison.html">📈 历史对比</a>
+    <a class="nav-link" data-page="planner" href="planner.html">📊 开始分析</a>
+    <a class="nav-link" data-page="monthly" href="monthly.html">📅 月度对账</a>
+    <a class="nav-link" data-page="scenarios" href="scenarios.html">🔮 场景模拟</a>
+    <a class="nav-link" href="portfolio.html">📊 投资组合</a>
+    <a class="nav-link active" href="insurance.html">🛡️ 保险分析</a>
+  </div>
+</nav>
+
+<div class="main" style="max-width:1000px">
+
+  <div class="page-header">
+    <div class="page-title">🛡️ 保险分析</div>
+    <div class="page-sub">评估保障缺口，分析保费支出，提供保险配置建议</div>
+  </div>
+
+  <!-- 客户选择 -->
+  <div class="card" style="margin-bottom:24px">
+    <div class="card-title"><span class="ico">👤</span> 选择客户</div>
+    <div class="frow">
+      <div class="fg">
+        <label>客户档案</label>
+        <select id="client-select" onchange="loadClientInsurance()">
+          <option value="">— 请选择客户 —</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- 分析结果区域 -->
+  <div id="insurance-result" style="display:none">
+
+    <!-- 家庭基本信息 -->
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-title"><span class="ico">👨‍👩‍👧</span> 家庭保障需求</div>
+      <div class="grid2" style="margin-top:16px;gap:24px">
+        <div>
+          <div class="frow3" style="margin-bottom:16px">
+            <div class="fg">
+              <label>家庭年收入</label>
+              <input type="number" id="annual-income" placeholder="如：500000" onchange="recalculateInsurance()"/>
+            </div>
+            <div class="fg">
+              <label>家庭成员数</label>
+              <input type="number" id="family-size" value="2" min="1" max="10" onchange="recalculateInsurance()"/>
+            </div>
+          </div>
+          <div class="frow3">
+            <div class="fg">
+              <label>子女数量</label>
+              <input type="number" id="children-count" value="0" min="0" max="10" onchange="recalculateInsurance()"/>
+            </div>
+            <div class="fg">
+              <label>每月固定支出</label>
+              <input type="number" id="monthly-exp" placeholder="如：20000" onchange="recalculateInsurance()"/>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div style="padding:16px;background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.2);border-radius:12px">
+            <div style="font-size:12px;color:var(--text2);margin-bottom:8px">💡 保障额度建议</div>
+            <div style="font-size:13px;line-height:1.8">
+              • <strong>寿险保障</strong>：年收入的 5-10 倍<br/>
+              • <strong>重疾保障</strong>：3-5 倍年收入<br/>
+              • <strong>医疗保障</strong>：100万+<br/>
+              • <strong>意外保障</strong>：年收入的 2 倍
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 已有保障 -->
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-title"><span class="ico">📋</span> 已有保障（请填写或从档案导入）</div>
+      <div class="frow3" style="margin-top:16px">
+        <div class="fg">
+          <label>寿险保额</label>
+          <input type="number" id="life-insurance" value="0" min="0" onchange="recalculateInsurance()"/>
+        </div>
+        <div class="fg">
+          <label>重疾险保额</label>
+          <input type="number" id="critical-insurance" value="0" min="0" onchange="recalculateInsurance()"/>
+        </div>
+        <div class="fg">
+          <label>医疗险保额</label>
+          <input type="number" id="medical-insurance" value="0" min="0" onchange="recalculateInsurance()"/>
+        </div>
+      </div>
+      <div class="frow3" style="margin-top:12px">
+        <div class="fg">
+          <label>意外险保额</label>
+          <input type="number" id="accident-insurance" value="0" min="0" onchange="recalculateInsurance()"/>
+        </div>
+        <div class="fg">
+          <label>储蓄险年缴</label>
+          <input type="number" id="savings-insurance" value="0" min="0" onchange="recalculateInsurance()"/>
+        </div>
+        <div class="fg">
+          <label>其他年缴保费</label>
+          <input type="number" id="other-insurance" value="0" min="0" onchange="recalculateInsurance()"/>
+        </div>
+      </div>
+    </div>
+
+    <!-- 保障缺口分析 -->
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-title"><span class="ico">📊</span> 保障缺口分析</div>
+      <div id="gap-analysis" style="margin-top:16px"></div>
+    </div>
+
+    <!-- 保费支出评估 -->
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-title"><span class="ico">💰</span> 保费支出评估</div>
+      <div class="grid2" style="margin-top:16px">
+        <div>
+          <div style="padding:20px;background:var(--dark2);border-radius:12px;text-align:center">
+            <div style="font-size:12px;color:var(--text2);margin-bottom:8px">年缴保费总额</div>
+            <div id="total-premium" style="font-size:28px;font-weight:700;color:var(--gold)">—</div>
+          </div>
+        </div>
+        <div>
+          <div style="padding:20px;background:var(--dark2);border-radius:12px;text-align:center">
+            <div style="font-size:12px;color:var(--text2);margin-bottom:8px">保费占收入比</div>
+            <div id="premium-ratio" style="font-size:28px;font-weight:700">—</div>
+            <div id="premium-status" style="font-size:11px;color:var(--text2);margin-top:4px"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 保险建议 -->
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-title"><span class="ico">💡</span> 保险配置建议</div>
+      <div id="insurance-advices" style="margin-top:16px"></div>
+    </div>
+
+    <!-- 保存按钮 -->
+    <div style="text-align:center;margin-top:24px">
+      <button class="btn btn-gold" onclick="saveInsuranceAnalysis()">💾 保存分析结果</button>
+    </div>
+
+  </div>
+
+  <!-- 空状态 -->
+  <div id="empty-state" style="text-align:center;padding:60px 20px">
+    <div style="font-size:64px;margin-bottom:16px">🛡️</div>
+    <div style="font-size:16px;color:var(--text2)">请选择客户档案以加载保险分析</div>
+  </div>
+
+</div>
+
+<script src="assets/storage.js"></script>
+<script>
+// 初始化
+document.addEventListener('DOMContentLoaded', function() {
+  loadClientList();
+  renderGapAnalysisTemplate();
+  
+  // 检查是否有预设的客户ID
+  var presetClientId = sessionStorage.getItem('selectedClientId');
+  if (presetClientId) {
+    sessionStorage.removeItem('selectedClientId');
+    document.getElementById('client-select').value = presetClientId;
+    setTimeout(function() {
+      loadClientInsurance();
+    }, 100);
+  }
+});
+
+// 渲染缺口分析模板
+function renderGapAnalysisTemplate() {
+  var gaps = ['life', 'critical', 'medical', 'accident'];
+  var names = ['寿险', '重疾险', '医疗险', '意外险'];
+  var html = '<div class="grid2" style="gap:20px">';
+  for (var i = 0; i < gaps.length; i++) {
+    html += '<div style="padding:16px;background:var(--dark2);border-radius:12px">' +
+      '<div style="display:flex;justify-content:space-between;margin-bottom:12px">' +
+      '<span style="font-size:14px;font-weight:600">' + names[i] + '</span>' +
+      '<span id="' + gaps[i] + '-gap-pct" style="font-size:14px;font-weight:700;color:var(--gold)">0%</span></div>' +
+      '<div style="height:8px;background:var(--dark);border-radius:4px;margin-bottom:12px;overflow:hidden">' +
+      '<div id="' + gaps[i] + '-gap-bar" style="height:100%;width:0%;background:var(--green);border-radius:4px"></div></div>' +
+      '<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text2)">' +
+      '<span>需求 <strong id="' + gaps[i] + '-need" style="color:var(--text)">¥0</strong></span>' +
+      '<span>现有 <strong id="' + gaps[i] + '-current" style="color:var(--text)">¥0</strong></span></div>' +
+      '<div id="' + gaps[i] + '-gap" style="font-size:12px;color:var(--green);margin-top:8px;text-align:center"></div></div>';
+  }
+  html += '</div>';
+  document.getElementById('gap-analysis').innerHTML = html;
+}
+
+// 加载客户列表
+function loadClientList() {
+  var select = document.getElementById('client-select');
+  var clients = loadAllClients();
+  console.log('[Insurance] 加载客户数:', clients.length);
+  if (clients.length === 0) {
+    console.warn('[Insurance] localStorage 中没有客户数据，请先在 clients.html 中创建客户');
+  }
+  clients.forEach(function(c) {
+    var opt = document.createElement('option');
+    opt.value = c.id;
+    opt.textContent = c.name + ' (' + c.age + '岁)';
+    select.appendChild(opt);
+  });
+}
+
+// 加载客户保险信息
+function loadClientInsurance() {
+  var cid = document.getElementById('client-select').value;
+  if (!cid) {
+    document.getElementById('insurance-result').style.display = 'none';
+    document.getElementById('empty-state').style.display = 'block';
+    return;
+  }
+
+  var client = loadClientData(cid);
+  if (!client) {
+    toast('无法加载客户数据', 'error');
+    return;
+  }
+
+  // 从 derived 获取计算后的数据
+  var derived = client.derived || {};
+  var raw = client.raw || {};
+  
+  // 合并数据
+  var data = Object.assign({}, raw, derived);
+
+  document.getElementById('insurance-result').style.display = 'block';
+  document.getElementById('empty-state').style.display = 'none';
+
+  // 预填充数据
+  document.getElementById('annual-income').value = (data.totalIncome || 0) * 12 || 0;
+  document.getElementById('monthly-exp').value = data.totalExp || 0;
+
+  // 如果有储蓄险数据
+  if (data.savingsPlan > 0) {
+    document.getElementById('savings-insurance').value = Math.round(data.savingsPlan * 0.1);
+  }
+
+  // 重新计算
+  recalculateInsurance();
+}
+
+// 重新计算保险分析
+function recalculateInsurance() {
+  var annualIncome = parseFloat(document.getElementById('annual-income').value) || 0;
+  var monthlyExp = parseFloat(document.getElementById('monthly-exp').value) || 0;
+  var familySize = parseInt(document.getElementById('family-size').value) || 2;
+  var childrenCount = parseInt(document.getElementById('children-count').value) || 0;
+
+  // 已有保障
+  var lifeInsurance = parseFloat(document.getElementById('life-insurance').value) || 0;
+  var criticalInsurance = parseFloat(document.getElementById('critical-insurance').value) || 0;
+  var medicalInsurance = parseFloat(document.getElementById('medical-insurance').value) || 0;
+  var accidentInsurance = parseFloat(document.getElementById('accident-insurance').value) || 0;
+  var savingsInsurance = parseFloat(document.getElementById('savings-insurance').value) || 0;
+  var otherInsurance = parseFloat(document.getElementById('other-insurance').value) || 0;
+
+  // 计算保障需求
+  var lifeNeed = annualIncome * 8;
+  var criticalNeed = annualIncome * 3;
+  var medicalNeed = 1000000;
+  var accidentNeed = annualIncome * 2;
+
+  // 计算缺口
+  var lifeGap = Math.max(0, lifeNeed - lifeInsurance);
+  var criticalGap = Math.max(0, criticalNeed - criticalInsurance);
+  var medicalGap = Math.max(0, medicalNeed - medicalInsurance);
+  var accidentGap = Math.max(0, accidentNeed - accidentInsurance);
+
+  // 保费分析
+  var totalPremium = savingsInsurance + otherInsurance;
+  var premiumRatio = annualIncome > 0 ? (totalPremium / annualIncome * 100) : 0;
+
+  // 渲染缺口分析
+  updateGapBar('life', lifeNeed, lifeInsurance, lifeGap);
+  updateGapBar('critical', criticalNeed, criticalInsurance, criticalGap);
+  updateGapBar('medical', medicalNeed, medicalInsurance, medicalGap);
+  updateGapBar('accident', accidentNeed, accidentInsurance, accidentGap);
+
+  // 渲染保费评估
+  document.getElementById('total-premium').textContent = '¥' + totalPremium.toLocaleString();
+  document.getElementById('premium-ratio').textContent = premiumRatio.toFixed(1) + '%';
+  var ratioColor = premiumRatio < 10 ? 'var(--green)' : premiumRatio < 15 ? 'var(--gold)' : 'var(--red)';
+  document.getElementById('premium-ratio').style.color = ratioColor;
+  var ratioStatus = premiumRatio < 10 ? '✓ 保费支出合理' : premiumRatio < 15 ? '⚠️ 保费支出偏高' : '✗ 保费支出过高';
+  document.getElementById('premium-status').textContent = ratioStatus;
+
+  // 生成建议
+  generateInsuranceAdvices(annualIncome, lifeGap, criticalGap, medicalGap, accidentGap, premiumRatio, childrenCount);
+}
+
+// 更新缺口条
+function updateGapBar(type, need, current, gap) {
+  var bar = document.getElementById(type + '-gap-bar');
+  var pct = document.getElementById(type + '-gap-pct');
+  var needEl = document.getElementById(type + '-need');
+  var currentEl = document.getElementById(type + '-current');
+  var gapEl = document.getElementById(type + '-gap');
+
+  var coverage = need > 0 ? Math.min(current / need * 100, 100) : 0;
+  var color = coverage >= 100 ? 'var(--green)' : coverage >= 50 ? 'var(--gold)' : 'var(--red)';
+
+  bar.style.width = coverage + '%';
+  bar.style.background = color;
+  pct.textContent = coverage.toFixed(0) + '%';
+  pct.style.color = color;
+  needEl.textContent = '¥' + need.toLocaleString();
+  currentEl.textContent = '¥' + current.toLocaleString();
+  gapEl.textContent = gap > 0 ? '缺口 ¥' + gap.toLocaleString() : '✓ 已覆盖';
+  gapEl.style.color = gap > 0 ? 'var(--red)' : 'var(--green)';
+}
+
+// 生成保险建议
+function generateInsuranceAdvices(annualIncome, lifeGap, criticalGap, medicalGap, accidentGap, premiumRatio, childrenCount) {
+  var advices = [];
+
+  if (medicalGap > 0) {
+    advices.push({ icon: '⚠️', type: 'critical', title: '医疗保障缺口最大', desc: '建议配置百万医疗险，年保费约 300-500 元，可覆盖大部分医疗费用', action: '优先配置' });
+  }
+
+  if (lifeGap > 500000) {
+    advices.push({ icon: '💡', type: 'info', title: '寿险保障不足', desc: '建议配置定期寿险，保费低、保障高，30岁男性100万保额年缴约500元', action: '建议配置' });
+  }
+
+  if (criticalGap > 300000) {
+    advices.push({ icon: '💡', type: 'info', title: '重疾保障需要加强', desc: '重疾险用于弥补收入损失和治疗费用，建议50万+保额', action: '建议配置' });
+  }
+
+  if (childrenCount > 0 && lifeGap > 0) {
+    advices.push({ icon: '👶', type: 'critical', title: '家庭支柱保障尤为重要', desc: '有子女的情况下，建议优先为家庭经济支柱配置足额寿险', action: '重点关注' });
+  }
+
+  if (premiumRatio > 15) {
+    advices.push({ icon: '⚠️', type: 'critical', title: '保费支出过高', desc: '建议控制在年收入的 10% 以内，避免影响日常生活质量', action: '优化配置' });
+  }
+
+  if (accidentGap > 0 && premiumRatio < 10) {
+    advices.push({ icon: '💡', type: 'info', title: '可增加意外保障', desc: '综合意外险保费低、保障高，100万保额年缴约300元', action: '可选配置' });
+  }
+
+  if (advices.length === 0) {
+    advices.push({ icon: '✅', type: 'good', title: '保障配置良好', desc: '您的保险配置较为完善，建议定期检视保单有效性', action: '定期检视' });
+  }
+
+  // 渲染建议
+  var html = '';
+  for (var i = 0; i < advices.length; i++) {
+    var a = advices[i];
+    var bg = a.type === 'critical' ? 'rgba(224,85,85,.1)' : a.type === 'good' ? 'rgba(62,207,142,.1)' : 'rgba(201,168,76,.1)';
+    var border = a.type === 'critical' ? 'rgba(224,85,85,.3)' : a.type === 'good' ? 'rgba(62,207,142,.3)' : 'rgba(201,168,76,.3)';
+    var tagBg = a.type === 'critical' ? 'var(--red)' : a.type === 'good' ? 'var(--green)' : 'var(--gold)';
+    html += '<div style="background:' + bg + ';border:1px solid ' + border + ';border-radius:10px;padding:14px;margin-bottom:10px;display:flex;gap:12px;align-items:flex-start">' +
+      '<div style="font-size:20px;flex-shrink:0">' + a.icon + '</div>' +
+      '<div style="flex:1">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">' +
+      '<div style="font-size:14px;font-weight:600">' + a.title + '</div>' +
+      '<span style="font-size:11px;background:' + tagBg + ';color:#fff;padding:2px 8px;border-radius:4px">' + a.action + '</span></div>' +
+      '<div style="font-size:12px;color:var(--text2);line-height:1.6">' + a.desc + '</div></div></div>';
+  }
+  document.getElementById('insurance-advices').innerHTML = html;
+}
+
+// 保存分析结果
+function saveInsuranceAnalysis() {
+  var cid = document.getElementById('client-select').value;
+  if (!cid) {
+    toast('请先选择客户', 'warn');
+    return;
+  }
+  
+  // 收集当前分析结果
+  var analysisData = {
+    annualIncome: document.getElementById('annual-income').value,
+    familySize: document.getElementById('family-size').value,
+    childrenCount: document.getElementById('children-count').value,
+    monthlyExp: document.getElementById('monthly-exp').value,
+    lifeGap: document.getElementById('life-gap-pct').textContent,
+    criticalGap: document.getElementById('critical-gap-pct').textContent,
+    medicalGap: document.getElementById('medical-gap-pct').textContent,
+    accidentGap: document.getElementById('accident-gap-pct').textContent,
+    premiumRatio: document.getElementById('premium-ratio').textContent,
+    savedAt: new Date().toISOString()
+  };
+  
+  if (saveAnalysisResult(cid, 'insurance', analysisData)) {
+    toast('保险分析已保存到客户档案');
+  } else {
+    toast('保存失败', 'error');
+  }
+}
+
+// Toast 提示
+function toast(msg, type) {
+  type = type || 'info';
+  var color = type === 'error' ? '#e05555' : type === 'warn' ? '#f59e0b' : '#3ecf8e';
+  var el = document.createElement('div');
+  el.style.cssText = 'position:fixed;top:80px;right:20px;background:' + color + ';color:#fff;padding:12px 20px;border-radius:8px;z-index:10000;font-size:13px';
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(function() { el.remove(); }, 3000);
+}
+</script>
+</body>
+</html>

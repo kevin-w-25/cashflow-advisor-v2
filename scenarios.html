@@ -19,6 +19,8 @@
     <a class="nav-link" data-page="planner" href="planner.html">📊 开始分析</a>
     <a class="nav-link" data-page="monthly" href="monthly.html">📅 月度对账</a>
     <a class="nav-link active" data-page="scenarios" href="scenarios.html">🔮 场景模拟</a>
+    <a class="nav-link" href="portfolio.html">📊 投资组合</a>
+    <a class="nav-link" href="insurance.html">🛡️ 保险分析</a>
   </div>
 </nav>
 
@@ -68,6 +70,9 @@
   <div id="result-panel" style="display:none" class="card gb">
     <div class="card-title"><span class="ico">📊</span> 模拟结果对比</div>
     <div id="result-content"></div>
+    <div style="margin-top:16px;display:flex;justify-content:flex-end;gap:10px">
+      <button class="btn btn-gold" onclick="saveScenarioResult()">💾 保存模拟结果</button>
+    </div>
   </div>
 
   <!-- 预设场景说明 -->
@@ -118,6 +123,15 @@ document.addEventListener('DOMContentLoaded', () => {
     opt.textContent = c.name + '（' + (c.age || '') + '岁）';
     sel.appendChild(opt);
   });
+  
+  // 检查是否有预设的客户ID
+  const presetClientId = sessionStorage.getItem('selectedClientId');
+  if (presetClientId) {
+    sessionStorage.removeItem('selectedClientId');
+    sel.value = presetClientId;
+    setTimeout(() => loadScenario(), 100);
+  }
+  
   switchScenario();
 });
 
@@ -208,6 +222,56 @@ function loadScenario() {
   // 使用 raw 数据（原始输入数据）用于模拟
   baseData = client.raw || client;
   toast('已加载 ' + client.name + ' 的数据');
+}
+
+// 保存模拟结果
+function saveScenarioResult() {
+  const cid = el('sel-client').value;
+  if (!cid) { toast('请先选择客户', 'error'); return; }
+  
+  const resultContent = document.getElementById('result-content');
+  if (!resultContent || resultContent.innerHTML.trim() === '') {
+    toast('请先运行模拟', 'error');
+    return;
+  }
+  
+  const analysisData = {
+    scenarioType: el('sel-scenario').value,
+    scenarioName: document.getElementById('scene-title').textContent,
+    params: getScenarioParams(),
+    resultHtml: resultContent.innerHTML,
+    savedAt: new Date().toISOString()
+  };
+  
+  if (typeof saveAnalysisResult === 'function') {
+    if (saveAnalysisResult(cid, 'scenarios', analysisData)) {
+      toast('模拟结果已保存到客户档案');
+    } else {
+      toast('保存失败', 'error');
+    }
+  } else {
+    toast('保存功能不可用', 'error');
+  }
+}
+
+// 获取当前场景参数
+function getScenarioParams() {
+  const scenario = el('sel-scenario').value;
+  const configs = {
+    salary: [{ id: 's-increase', label: '加薪幅度' }],
+    retire: [{ id: 's-years', label: '提前年数' }, { id: 's-expense', label: '支出变化' }],
+    'big-expense': [{ id: 's-amount', label: '支出金额' }, { id: 's-source', label: '资金来源' }],
+    investment: [{ id: 's-rate', label: '收益率变化' }],
+    inflation: [{ id: 's-inflation', label: '通胀率' }]
+  };
+  
+  const params = configs[scenario] || [];
+  const result = {};
+  params.forEach(p => {
+    const el = document.getElementById(p.id);
+    if (el) result[p.id] = el.value;
+  });
+  return result;
 }
 
 function runSimulation() {

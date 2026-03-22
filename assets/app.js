@@ -73,18 +73,49 @@ function calcScores(d) {
   return sc;
 }
 
+
 // ── 衍生数据计算 ──────────────────────────────
 function deriveData(raw) {
   const d = { ...raw };
-  d.totalAssets = (d.cash || 0) + (d.savingsPlan || 0) + (d.trust || 0) + (d.property || 0) + (d.stocks || 0) + (d.gold || 0) + (d.other || 0);
+  
+  // 计算总资产（包含所有资产类别）
+  d.totalAssets = 
+    (d.cash || 0) + 
+    (d.moneyFund || 0) + 
+    (d.savingsPlan || 0) + 
+    (d.bonds || 0) + 
+    (d.trust || 0) + 
+    (d.property || 0) + 
+    (d.stocks || 0) + 
+    (d.gold || 0) + 
+    (d.alternatives || 0) + 
+    (d.otherInvest || 0);
+  
+  // 计算总收入
   d.totalIncome = (d.activeIncome || 0) + (d.passiveIncome || 0);
-  d.totalExp = (d.essentialExp || 0) + (d.flexExp || 0) + (d.premiumExp || 0) + (d.debtExp || 0);
+  
+  // 计算总支出（包含所有支出类别）
+  d.totalExp = 
+    (d.housing || 0) + 
+    (d.propertyFee || 0) + 
+    (d.daily || 0) + 
+    (d.transport || 0) + 
+    (d.medical || 0) + 
+    (d.education || 0) + 
+    (d.premiumExp || 0) + 
+    (d.debtExp || 0) + 
+    (d.flexExp || 0) + 
+    (d.otherExp || 0);
+  
+  // 保持向后兼容
+  d.essentialExp = d.housing + d.propertyFee + d.daily + d.transport + d.medical + d.education;
+  
   d.monthlySurplus = d.totalIncome - d.totalExp;
   d.annualSurplus = d.monthlySurplus * 12;
   d.debtRatio = d.totalIncome > 0 ? (d.debtExp || 0) / d.totalIncome : 0;
   d.savingsRate = d.totalIncome > 0 ? (d.monthlySurplus + (d.premiumExp || 0)) / d.totalIncome : 0;
   d.emergencyTarget = (d.essentialExp || 0) * (d.emergencyMonths || 6);
-  d.emergencyCoverage = d.emergencyTarget > 0 ? (d.cash || 0) / d.emergencyTarget : 2;
+  d.emergencyCoverage = d.emergencyTarget > 0 ? ((d.cash || 0) + (d.moneyFund || 0)) / d.emergencyTarget : 2;
   d.yearsToRetire = Math.max(0, (d.retireAge || 60) - (d.age || 45));
   // 被动收入占比 — 强制限制在 0-1 之间，防止异常数据显示
   d.passiveRatio = (d.totalIncome > 0 && d.totalIncome !== 0 && !isNaN(d.totalIncome))
@@ -437,14 +468,21 @@ function calcAllocationDrift(d) {
 }
 
 // ── 生成调仓建议 ──────────────────────────────
-function genRebalanceAdvice(drift, total, currency) {
+function genRebalanceAdvice(drift, total, currency, currentAssets) {
   const advices = [];
   const c = currency || 'USD';
   const fmtPct = function(n) { return n.toFixed(1) + '%'; };
   
+  // 隐藏信托和房产的建议（用户不希望建议这两类）
+  const hiddenAssets = ['trust', 'property'];
+  
   Object.entries(drift).forEach(function(entry) {
     const asset = entry[0];
     const data = entry[1];
+    
+    // 跳过隐藏的资产类别
+    if (hiddenAssets.includes(asset)) return;
+    
     if (Math.abs(data.diff) > 5) {
       const action = data.diff > 0 ? '减持' : '增持';
       const amount = Math.abs(data.diff / 100 * total);

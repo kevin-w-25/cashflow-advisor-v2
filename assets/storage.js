@@ -42,14 +42,19 @@ function saveClientData(rawData, derivedData, mergeByName = false) {
       clientId = generateId();
     }
 
+    // 获取现有客户记录（保留 analyses 等字段）
+    const existingRecord = existingData.find(c => c.id === clientId) || {};
+
     const clientRecord = {
       id: clientId,
       name: rawData.name || '未命名',
       age: rawData.age || 0,
       raw: rawData,           // 原始输入数据
       derived: derivedData,  // 计算后的衍生数据
-      createdAt: rawData.createdAt || new Date().toISOString(),
+      createdAt: rawData.createdAt || existingRecord.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString(),
+      // 保留分析结果
+      analyses: existingRecord.analyses || {},
     };
 
     // 更新或添加客户记录
@@ -70,6 +75,71 @@ function saveClientData(rawData, derivedData, mergeByName = false) {
     console.error('保存数据失败:', error);
     toast('保存数据失败', 'error');
     return null;
+  }
+}
+
+// ── 保存分析结果 ─────────────────────────────
+function saveAnalysisResult(clientId, analysisType, analysisData) {
+  try {
+    const clients = loadAllClients();
+    const index = clients.findIndex(c => c.id === clientId);
+    
+    if (index < 0) {
+      console.error('未找到客户:', clientId);
+      return false;
+    }
+
+    // 初始化 analyses 字段
+    if (!clients[index].analyses) {
+      clients[index].analyses = {};
+    }
+
+    // 保存分析结果
+    clients[index].analyses[analysisType] = {
+      data: analysisData,
+      updatedAt: new Date().toISOString()
+    };
+
+    clients[index].updatedAt = new Date().toISOString();
+
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(clients));
+    console.log(`分析结果已保存: ${analysisType} -> ${clientId}`);
+    return true;
+  } catch (error) {
+    console.error('保存分析结果失败:', error);
+    return false;
+  }
+}
+
+// ── 加载分析结果 ─────────────────────────────
+function loadAnalysisResult(clientId, analysisType) {
+  try {
+    const client = loadClientData(clientId);
+    if (!client || !client.analyses) return null;
+    return client.analyses[analysisType] || null;
+  } catch (error) {
+    console.error('加载分析结果失败:', error);
+    return null;
+  }
+}
+
+// ── 删除分析结果 ─────────────────────────────
+function deleteAnalysisResult(clientId, analysisType) {
+  try {
+    const clients = loadAllClients();
+    const index = clients.findIndex(c => c.id === clientId);
+    
+    if (index < 0) return false;
+
+    if (clients[index].analyses && clients[index].analyses[analysisType]) {
+      delete clients[index].analyses[analysisType];
+      clients[index].updatedAt = new Date().toISOString();
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(clients));
+    }
+    return true;
+  } catch (error) {
+    console.error('删除分析结果失败:', error);
+    return false;
   }
 }
 

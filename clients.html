@@ -19,6 +19,8 @@
     <a class="nav-link" data-page="planner" href="planner.html">📊 开始分析</a>
     <a class="nav-link" data-page="monthly" href="monthly.html">📅 月度对账</a>
     <a class="nav-link" data-page="scenarios" href="scenarios.html">🔮 场景模拟</a>
+    <a class="nav-link" href="portfolio.html">📊 投资组合</a>
+    <a class="nav-link" href="insurance.html">🛡️ 保险分析</a>
   </div>
 </nav>
 
@@ -191,19 +193,30 @@ function renderClientList(clients = null) {
               </div>
             </div>
 
-            <!-- 操作按钮 -->
-            <div style="display:flex;gap:8px">
+            <!-- 分析入口按钮 -->
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
               <button class="btn btn-gold" style="padding:8px 16px;font-size:13px"
                       data-id="${client.id}" onclick="event.stopPropagation();loadAndEdit(this.dataset.id)">
-                ✏️ 编辑
+                ✏️ 编辑档案
               </button>
-              <button class="btn btn-ghost" style="padding:8px 16px;font-size:13px"
-                      data-id="${client.id}" onclick="event.stopPropagation();viewHistory(this.dataset.id)">
-                📜 历史
+              <button class="btn btn-outline" style="padding:8px 16px;font-size:13px"
+                      data-id="${client.id}" onclick="event.stopPropagation();openAnalysis('portfolio', this.dataset.id)">
+                📊 投资组合
+                ${client.analyses?.portfolio ? '<span style="margin-left:4px;color:var(--green)">✓</span>' : ''}
               </button>
-              <button class="btn btn-ghost" style="padding:8px 16px;font-size:13px;color:var(--red)"
-                      data-id="${client.id}" data-name="${escapeHtml(client.name)}" onclick="event.stopPropagation();confirmDelete(this.dataset.id, this.dataset.name)">
-                🗑️ 删除
+              <button class="btn btn-outline" style="padding:8px 16px;font-size:13px"
+                      data-id="${client.id}" onclick="event.stopPropagation();openAnalysis('insurance', this.dataset.id)">
+                🛡️ 保险分析
+                ${client.analyses?.insurance ? '<span style="margin-left:4px;color:var(--green)">✓</span>' : ''}
+              </button>
+              <button class="btn btn-outline" style="padding:8px 16px;font-size:13px"
+                      data-id="${client.id}" onclick="event.stopPropagation();openAnalysis('monthly', this.dataset.id)">
+                📅 月度对账
+                ${client.analyses?.monthly ? '<span style="margin-left:4px;color:var(--green)">✓</span>' : ''}
+              </button>
+              <button class="btn btn-outline" style="padding:8px 16px;font-size:13px"
+                      data-id="${client.id}" onclick="event.stopPropagation();openAnalysis('scenarios', this.dataset.id)">
+                🔮 场景模拟
               </button>
             </div>
           </div>
@@ -265,6 +278,24 @@ function riskLabel(pref) {
 // ── 搜索客户 ─────────────────────────────────
 function searchClients() {
   renderClientList();
+}
+
+// ── 打开分析页面 ──────────────────────────────
+function openAnalysis(type, clientId) {
+  // 保存当前选择的客户ID到 sessionStorage
+  sessionStorage.setItem('selectedClientId', clientId);
+  
+  // 根据类型跳转到对应页面
+  const pages = {
+    portfolio: 'portfolio.html',
+    insurance: 'insurance.html',
+    monthly: 'monthly.html',
+    scenarios: 'scenarios.html'
+  };
+  
+  if (pages[type]) {
+    location.href = pages[type];
+  }
 }
 
 // ── 加载并编辑客户 ───────────────────────────

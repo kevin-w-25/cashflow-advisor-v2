@@ -64,6 +64,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei
 .btn-gold:hover{opacity:.9;transform:translateY(-1px)}
 .btn-ghost{background:transparent;border:1px solid var(--border2);color:var(--text3)}
 .btn-ghost:hover{border-color:var(--gold);color:var(--gold)}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text2);padding:6px 12px;border-radius:6px;font-size:12px;transition:all .2s}
+.btn-outline:hover{border-color:var(--gold);color:var(--gold);background:rgba(201,168,76,.1)}
 .btn-green{background:rgba(62,207,142,.15);border:1px solid rgba(62,207,142,.3);color:var(--green)}
 .btn-green:hover{background:rgba(62,207,142,.25)}
 .btn-red{background:rgba(224,85,85,.12);border:1px solid rgba(224,85,85,.3);color:var(--red)}
@@ -172,6 +174,53 @@ hr.gd{border:none;border-top:1px solid var(--border2);margin:18px 0}
 /* ── ANIMATIONS ── */
 @keyframes fu{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 .fu{animation:fu .4s ease both}
+
+/* ── PRINT STYLES ── */
+@media print {
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+  
+  body {
+    background: #ffffff !important;
+    color: #333333 !important;
+  }
+  
+  .nav, .phases, .step-panel, #step1, #step2, .btn, button,
+  .nav-links, .nav-actions, .page-header {
+    display: none !important;
+  }
+  
+  #report-content {
+    display: block !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: #ffffff !important;
+  }
+  
+  #report-content .card {
+    background: #ffffff !important;
+    border: 1px solid #e0e0e0 !important;
+    box-shadow: none !important;
+    page-break-inside: avoid;
+  }
+  
+  .score-circle {
+    border: 4px solid #c9a84c !important;
+    background: #f5f0e6 !important;
+  }
+  
+  .card, .card2 {
+    background: #ffffff !important;
+    border-color: #e0e0e0 !important;
+  }
+  
+  #print-guide-modal {
+    display: none !important;
+  }
+}
 
 /* ── PHASE INDICATOR ── */
 .phases{display:flex;margin-bottom:24px}

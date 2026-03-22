@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PDF 测试</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+</head>
+<body style="font-family:sans-serif;padding:40px;background:#f5f5f5">
+
+<h2>PDF 导出测试</h2>
+
+<button onclick="testBasicPDF()" style="padding:10px 20px;margin:5px;">测试1: 简单文本</button>
+<button onclick="testGradientPDF()" style="padding:10px 20px;margin:5px;">测试2: 带渐变</button>
+<button onclick="testComplexPDF()" style="padding:10px 20px;margin:5px;">测试3: 复杂内容</button>
+<button onclick="testChartsPDF()" style="padding:10px 20px;margin:5px;">测试4: 条形图</button>
+
+<div id="test1" style="display:none;padding:20px;background:#fff;">
+  <h1>简单文本测试</h1>
+  <p>这是一段简单的中文文本，用于测试 PDF 导出是否正常工作。</p>
+  <p>测试日期：<span id="date1"></span></p>
+</div>
+
+<div id="test2" style="display:none;padding:20px;background:#fff;">
+  <h1>渐变测试</h1>
+  <div style="width:200px;height:100px;background:linear-gradient(to right, red, blue);margin:10px 0;"></div>
+  <div style="width:200px;height:100px;background:conic-gradient(red, yellow, green, red);margin:10px 0;"></div>
+</div>
+
+<div id="test3" style="display:none;padding:20px;background:#fff;">
+  <h1>复杂内容测试</h1>
+  <div style="display:flex;gap:15px;margin:20px 0;">
+    <div style="flex:1;padding:15px;background:#f0f0f0;border-radius:8px;">
+      <div style="font-size:12px;color:#666;">收入</div>
+      <div style="font-size:24px;font-weight:bold;color:green;">$50,000</div>
+    </div>
+    <div style="flex:1;padding:15px;background:#f0f0f0;border-radius:8px;">
+      <div style="font-size:12px;color:#666;">支出</div>
+      <div style="font-size:24px;font-weight:bold;color:red;">$30,000</div>
+    </div>
+  </div>
+</div>
+
+<div id="test4" style="display:none;padding:20px;background:#fff;">
+  <h1>条形图测试</h1>
+  <div style="margin:15px 0;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+      <span style="width:60px;font-size:12px;">储蓄率</span>
+      <div style="flex:1;height:20px;background:#f0f0f0;border-radius:4px;overflow:hidden;">
+        <div style="width:35%;height:100%;background:#2d8a5e;border-radius:4px;"></div>
+      </div>
+      <span style="width:40px;font-size:12px;text-align:right;">35%</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+      <span style="width:60px;font-size:12px;">债务比率</span>
+      <div style="flex:1;height:20px;background:#f0f0f0;border-radius:4px;overflow:hidden;">
+        <div style="width:20%;height:100%;background:#c9a84c;border-radius:4px;"></div>
+      </div>
+      <span style="width:40px;font-size:12px;text-align:right;">20%</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span style="width:60px;font-size:12px;">被动收入</span>
+      <div style="flex:1;height:20px;background:#f0f0f0;border-radius:4px;overflow:hidden;">
+        <div style="width:45%;height:100%;background:#4d8fff;border-radius:4px;"></div>
+      </div>
+      <span style="width:40px;font-size:12px;text-align:right;">45%</span>
+    </div>
+  </div>
+</div>
+
+<script>
+document.getElementById('date1').textContent = new Date().toLocaleDateString('zh-CN');
+
+function createPDF(elementId, filename) {
+  const el = document.getElementById(elementId);
+  el.style.display = 'block';
+  
+  html2pdf().set({
+    margin: 10,
+    filename: filename,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true },
+    jsPDF: { unit: 'mm', format: 'a4' }
+  }).from(el).save().then(() => {
+    el.style.display = 'none';
+    console.log('PDF generated:', filename);
+  }).catch(err => {
+    console.error('PDF error:', err);
+    el.style.display = 'none';
+    alert('PDF 生成失败: ' + err.message);
+  });
+}
+
+function testBasicPDF() { createPDF('test1', 'test1-simple.pdf'); }
+function testGradientPDF() { createPDF('test2', 'test2-gradient.pdf'); }
+function testComplexPDF() { createPDF('test3', 'test3-complex.pdf'); }
+function testChartsPDF() { createPDF('test4', 'test4-charts.pdf'); }
+</script>
+</body>
+</html>

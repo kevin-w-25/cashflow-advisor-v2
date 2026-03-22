@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>现金流规划助手 · 投资组合分析</title>
+<link rel="stylesheet" href="assets/style.css"/>
+</head>
+<body>
+
+<nav class="nav">
+  <a class="nav-brand" href="index.html">
+    <div class="nav-logo">💎</div>
+    <span class="nav-title">现金流规划助手</span>
+  </a>
+  <div class="nav-links">
+    <a class="nav-link" data-page="index" href="index.html">🏠 首页</a>
+    <a class="nav-link" data-page="clients" href="clients.html">📋 客户档案</a>
+    <a class="nav-link" data-page="comparison" href="comparison.html">📈 历史对比</a>
+    <a class="nav-link" data-page="planner" href="planner.html">📊 开始分析</a>
+    <a class="nav-link" data-page="monthly" href="monthly.html">📅 月度对账</a>
+    <a class="nav-link" data-page="scenarios" href="scenarios.html">🔮 场景模拟</a>
+    <a class="nav-link active" href="portfolio.html">📊 投资组合</a>
+    <a class="nav-link" href="insurance.html">🛡️ 保险分析</a>
+  </div>
+</nav>
+
+<div class="main" style="max-width:1000px">
+
+  <div class="page-header">
+    <div class="page-title">📊 投资组合分析</div>
+    <div class="page-sub">评估资产配置，分析风险分散度，提供优化建议</div>
+  </div>
+
+  <!-- 客户选择 -->
+  <div class="card" style="margin-bottom:24px">
+    <div class="card-title"><span class="ico">👤</span> 选择客户</div>
+    <div class="frow">
+      <div class="fg">
+        <label>客户档案</label>
+        <select id="client-select" onchange="loadClientPortfolio()">
+          <option value="">— 请选择客户 —</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label>分析日期</label>
+        <input type="date" id="analysis-date"/>
+      </div>
+    </div>
+    <button class="btn btn-gold" onclick="loadClientPortfolio()" style="margin-top:12px">🔍 加载分析</button>
+  </div>
+
+  <!-- 分析结果区域 -->
+  <div id="portfolio-result" style="display:none">
+
+    <!-- 资产总览 -->
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-title"><span class="ico">💰</span> 资产配置总览</div>
+      <div class="grid2" style="margin-top:16px;gap:24px">
+        <div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:16px">
+            <span style="font-size:14px;color:var(--text2)">总资产</span>
+            <span id="total-assets" style="font-size:20px;font-weight:700;color:var(--gold)">—</span>
+          </div>
+          <div id="asset-chart" style="display:flex;height:24px;border-radius:12px;overflow:hidden"></div>
+          <div id="asset-legend" style="margin-top:12px"></div>
+        </div>
+        <div>
+          <div style="font-size:13px;color:var(--text2);margin-bottom:12px">资产分布明细</div>
+          <div id="asset-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 风险评估 -->
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-title"><span class="ico">⚖️</span> 风险分散评估</div>
+      <div class="grid2" style="margin-top:16px">
+        <div>
+          <div style="font-size:13px;color:var(--text2);margin-bottom:8px">分散度评分</div>
+          <div id="diversity-score" style="font-size:36px;font-weight:800;color:var(--gold)">—</div>
+          <div id="diversity-label" style="font-size:12px;color:var(--text2);margin-top:4px"></div>
+        </div>
+        <div>
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+            <span style="font-size:12px;color:var(--text2);width:80px">高风险占比</span>
+            <div style="flex:1;height:8px;background:var(--dark2);border-radius:4px;overflow:hidden">
+              <div id="high-risk-bar" style="height:100%;width:0%;background:var(--red);border-radius:4px;transition:width .5s"></div>
+            </div>
+            <span id="high-risk-pct" style="font-size:12px;color:var(--text2);width:40px">0%</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+            <span style="font-size:12px;color:var(--text2);width:80px">中风险占比</span>
+            <div style="flex:1;height:8px;background:var(--dark2);border-radius:4px;overflow:hidden">
+              <div id="mid-risk-bar" style="height:100%;width:0%;background:var(--orange);border-radius:4px;transition:width .5s"></div>
+            </div>
+            <span id="mid-risk-pct" style="font-size:12px;color:var(--text2);width:40px">0%</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px">
+            <span style="font-size:12px;color:var(--text2);width:80px">低风险占比</span>
+            <div style="flex:1;height:8px;background:var(--dark2);border-radius:4px;overflow:hidden">
+              <div id="low-risk-bar" style="height:100%;width:0%;background:var(--green);border-radius:4px;transition:width .5s"></div>
+            </div>
+            <span id="low-risk-pct" style="font-size:12px;color:var(--text2);width:40px">0%</span>
+          </div>
+        </div>
+      </div>
+      <!-- 分散度评分标准 -->
+      <div style="margin-top:20px;padding:14px;background:var(--dark3);border-radius:10px;border:1px solid var(--border2)">
+        <div style="font-size:12px;font-weight:600;color:var(--gold);margin-bottom:10px">📋 分散度评分标准</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;font-size:11px">
+          <div style="text-align:center;padding:8px;background:var(--card2);border-radius:6px">
+            <div style="color:var(--green);font-weight:600">80-100分</div>
+            <div style="color:var(--text3);margin-top:4px">优秀</div>
+            <div style="color:var(--text3);font-size:10px">配置均衡，多样化程度高</div>
+          </div>
+          <div style="text-align:center;padding:8px;background:var(--card2);border-radius:6px">
+            <div style="color:var(--gold);font-weight:600">60-79分</div>
+            <div style="color:var(--text3);margin-top:4px">良好</div>
+            <div style="color:var(--text3);font-size:10px">有较好分散，可小幅优化</div>
+          </div>
+          <div style="text-align:center;padding:8px;background:var(--card2);border-radius:6px">
+            <div style="color:var(--orange);font-weight:600">40-59分</div>
+            <div style="color:var(--text3);margin-top:4px">一般</div>
+            <div style="color:var(--text3);font-size:10px">建议增加资产类别</div>
+          </div>
+          <div style="text-align:center;padding:8px;background:var(--card2);border-radius:6px">
+            <div style="color:var(--red);font-weight:600">0-39分</div>
+            <div style="color:var(--text3);margin-top:4px">需改善</div>
+            <div style="color:var(--text3);font-size:10px">集中度较高，风险较大</div>
+          </div>
+        </div>
+        <div style="margin-top:10px;font-size:10px;color:var(--text3);line-height:1.6">
+          <strong style="color:var(--text2)">计算方法：</strong>分散度评分 = 资产类别数量得分(0-50分) + 风险权重分散得分(0-50分)<br>
+          资产类别越多分数越高；高/中/低风险资产均衡分布可获得更高权重分
+        </div>
+      </div>
+    </div>
+
+    <!-- 收益分析 -->
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-title"><span class="ico">📈</span> 预期收益分析</div>
+      <div class="grid3" style="margin-top:16px">
+        <div style="text-align:center;padding:16px;background:var(--dark2);border-radius:12px">
+          <div style="font-size:11px;color:var(--text2);margin-bottom:8px">保守预估</div>
+          <div id="yield-low" style="font-size:24px;font-weight:700;color:var(--green)">—</div>
+        </div>
+        <div style="text-align:center;padding:16px;background:var(--dark2);border-radius:12px">
+          <div style="font-size:11px;color:var(--text2);margin-bottom:8px">中性预估</div>
+          <div id="yield-mid" style="font-size:24px;font-weight:700;color:var(--gold)">—</div>
+        </div>
+        <div style="text-align:center;padding:16px;background:var(--dark2);border-radius:12px">
+          <div style="font-size:11px;color:var(--text2);margin-bottom:8px">乐观预估</div>
+          <div id="yield-high" style="font-size:24px;font-weight:700;color:var(--blue)">—</div>
+        </div>
+      </div>
+      <div style="margin-top:16px;padding:12px;background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.2);border-radius:8px">
+        <div style="font-size:12px;color:var(--text2);margin-bottom:4px">💡 加权预期收益</div>
+        <div id="yield-weighted" style="font-size:18px;font-weight:700;color:var(--gold)">—</div>
+      </div>
+      <!-- 计算方法说明 -->
+      <div style="margin-top:16px;padding:14px;background:var(--dark3);border-radius:10px;border:1px solid var(--border2)">
+        <div style="font-size:12px;font-weight:600;color:var(--gold);margin-bottom:10px">📐 预期收益计算方法</div>
+        <div style="font-size:11px;color:var(--text3);line-height:1.8">
+          <div style="margin-bottom:8px"><strong style="color:var(--green)">保守预估：</strong>基于各资产最差历史表现估算</div>
+          <div style="margin-bottom:8px"><strong style="color:var(--gold)">中性预估：</strong>基于各资产长期平均回报估算</div>
+          <div style="margin-bottom:8px"><strong style="color:var(--blue)">乐观预估：</strong>基于各资产最佳历史表现估算</div>
+        </div>
+        <div style="margin-top:12px;padding:10px;background:var(--card2);border-radius:8px">
+          <div style="font-size:11px;color:var(--text3);margin-bottom:8px"><strong>各资产类别预期年化收益参考：</strong></div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;font-size:10px">
+            <div><span style="color:#4d8fff">现金</span>: 1.5-3%</div>
+            <div><span style="color:#3ecf8e">储蓄险</span>: 2.5-4.5%</div>
+            <div><span style="color:#8b5cf6">信托</span>: 4-8%</div>
+            <div><span style="color:#f59e0b">房产</span>: 2-6%</div>
+            <div><span style="color:#e05555">股票</span>: -10%~20%</div>
+            <div><span style="color:#c9a84c">黄金</span>: -2%~12%</div>
+            <div><span style="color:#6366f1">债券</span>: 2-5%</div>
+            <div><span style="color:#64748b">其他</span>: 0-6%</div>
+          </div>
+        </div>
+        <div style="margin-top:10px;font-size:10px;color:var(--text3);line-height:1.6">
+          <strong style="color:var(--text2)">计算公式：</strong><br>
+          组合预期收益 = Σ(各资产占比 × 该资产预期收益率)<br>
+          <span style="color:var(--text3)">例：50%股票(8%) + 30%债券(4%) + 20%现金(2%) = 5.4%中性收益</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 优化建议 -->
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-title"><span class="ico">💡</span> 投资优化建议</div>
+      <div id="portfolio-advices" style="margin-top:16px"></div>
+    </div>
+
+    <!-- 保存按钮 -->
+    <div style="text-align:center;margin-top:24px">
+      <button class="btn btn-gold" onclick="savePortfolioAnalysis()">💾 保存分析结果</button>
+    </div>
+
+  </div>
+
+  <!-- 空状态 -->
+  <div id="empty-state" style="text-align:center;padding:60px 20px">
+    <div style="font-size:64px;margin-bottom:16px">📊</div>
+    <div style="font-size:16px;color:var(--text2)">请选择客户档案以加载投资组合分析</div>
+  </div>
+
+</div>
+
+<script src="assets/storage.js"></script>
+<script>
+// 资产分类配置
+const assetConfig = {
+  cash: { name: '现金/活期', risk: 'low', color: '#4d8fff', yield: { low: 0.005, mid: 0.015, high: 0.02 } },
+  moneyFund: { name: '货币基金', risk: 'low', color: '#22d3ee', yield: { low: 0.015, mid: 0.025, high: 0.035 } },
+  savingsPlan: { name: '储蓄险/年金', risk: 'low', color: '#3ecf8e', yield: { low: 0.025, mid: 0.04, high: 0.055 } },
+  bonds: { name: '债券/债券基金', risk: 'low', color: '#6366f1', yield: { low: 0.02, mid: 0.04, high: 0.06 } },
+  trust: { name: '信托资产', risk: 'mid', color: '#8b5cf6', yield: { low: 0.04, mid: 0.07, high: 0.1 } },
+  property: { name: '投资性房产', risk: 'mid', color: '#f59e0b', yield: { low: 0.01, mid: 0.04, high: 0.08 } },
+  stocks: { name: '股票/基金', risk: 'high', color: '#e05555', yield: { low: -0.15, mid: 0.08, high: 0.2 } },
+  gold: { name: '黄金/贵金属', risk: 'mid', color: '#c9a84c', yield: { low: -0.05, mid: 0.05, high: 0.15 } },
+  alternatives: { name: '私募/对冲基金', risk: 'high', color: '#ec4899', yield: { low: -0.1, mid: 0.06, high: 0.18 } },
+  otherInvest: { name: '其他投资', risk: 'mid', color: '#64748b', yield: { low: 0, mid: 0.03, high: 0.08 } }
+};
+
+// 初始化
+document.addEventListener('DOMContentLoaded', function() {
+  loadClientList();
+  document.getElementById('analysis-date').value = new Date().toISOString().slice(0, 10);
+  
+  // 检查是否有预设的客户ID
+  var presetClientId = sessionStorage.getItem('selectedClientId');
+  if (presetClientId) {
+    sessionStorage.removeItem('selectedClientId');
+    document.getElementById('client-select').value = presetClientId;
+    // 延迟加载，确保选项已添加
+    setTimeout(function() {
+      loadClientPortfolio();
+    }, 100);
+  }
+});
+
+// 加载客户列表
+function loadClientList() {
+  var select = document.getElementById('client-select');
+  var clients = loadAllClients();
+  console.log('[Portfolio] 加载客户数:', clients.length);
+  if (clients.length === 0) {
+    console.warn('[Portfolio] localStorage 中没有客户数据，请先在 clients.html 中创建客户');
+  }
+  clients.forEach(function(c) {
+    var opt = document.createElement('option');
+    opt.value = c.id;
+    opt.textContent = c.name + ' (' + c.age + '岁)';
+    select.appendChild(opt);
+  });
+}
+
+// 加载客户投资组合
+function loadClientPortfolio() {
+  var cid = document.getElementById('client-select').value;
+  if (!cid) {
+    document.getElementById('portfolio-result').style.display = 'none';
+    document.getElementById('empty-state').style.display = 'block';
+    return;
+  }
+
+  var client = loadClientData(cid);
+  if (!client) {
+    toast('无法加载客户数据', 'error');
+    return;
+  }
+
+  // 从 derived 获取计算后的数据（包括 totalAssets）
+  var derived = client.derived || {};
+  var raw = client.raw || {};
+  
+  // 合并数据：raw 中的资产字段 + derived 中的计算字段
+  var data = Object.assign({}, raw, derived);
+  
+  // 如果 derived 中没有 totalAssets，手动计算
+  var totalAssets = derived.totalAssets || 0;
+  if (totalAssets === 0) {
+    totalAssets = (raw.cash || 0) + (raw.moneyFund || 0) + (raw.savingsPlan || 0) + 
+                  (raw.bonds || 0) + (raw.trust || 0) + (raw.property || 0) + 
+                  (raw.stocks || 0) + (raw.gold || 0) + (raw.alternatives || 0) + 
+                  (raw.otherInvest || 0);
+  }
+
+  document.getElementById('portfolio-result').style.display = 'block';
+  document.getElementById('empty-state').style.display = 'none';
+
+  // 渲染资产配置
+  renderAssetAllocation(data, totalAssets);
+
+  // 渲染风险评估
+  renderRiskAssessment(data, totalAssets);
+
+  // 渲染收益分析
+  renderYieldAnalysis(data, totalAssets);
+
+  // 生成建议
+  generatePortfolioAdvices(data, totalAssets);
+}
+
+// 渲染资产配置
+function renderAssetAllocation(data, total) {
+  var assets = ['cash', 'moneyFund', 'savingsPlan', 'bonds', 'trust', 'property', 'stocks', 'gold', 'alternatives', 'otherInvest'];
+  var chartHtml = '';
+  var legendHtml = '';
+  var listHtml = '';
+  var hasAssets = false;
+
+  assets.forEach(function(key) {
+    var val = data[key] || 0;
+    if (val > 0) {
+      hasAssets = true;
+      var cfg = assetConfig[key];
+      if (!cfg) return;
+      var pct = total > 0 ? (val / total * 100).toFixed(1) : 0;
+      chartHtml += '<div style="width:' + pct + '%;background:' + cfg.color + '"></div>';
+      legendHtml += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">' +
+        '<div style="width:12px;height:12px;border-radius:3px;background:' + cfg.color + '"></div>' +
+        '<span style="font-size:12px;color:var(--text2)">' + cfg.name + '</span>' +
+        '<span style="font-size:12px;color:var(--text);margin-left:auto">' + pct + '%</span></div>';
+      listHtml += '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border2)">' +
+        '<span style="font-size:13px">' + cfg.name + '</span>' +
+        '<span style="font-size:13px;font-weight:600">' + fmtMoney(val, data.currency) + '</span></div>';
+    }
+  });
+
+  if (!hasAssets) {
+    chartHtml = '<div style="width:100%;background:var(--dark2)"></div>';
+    legendHtml = '<div style="font-size:12px;color:var(--text2);text-align:center;padding:20px">暂无资产数据</div>';
+    listHtml = '<div style="font-size:12px;color:var(--text2);text-align:center;padding:20px">请在分析报告中填写资产信息</div>';
+  }
+
+  document.getElementById('total-assets').textContent = fmtMoney(total, data.currency);
+  document.getElementById('asset-chart').innerHTML = chartHtml;
+  document.getElementById('asset-legend').innerHTML = legendHtml;
+  document.getElementById('asset-list').innerHTML = listHtml;
+}
+
+// 渲染风险评估
+function renderRiskAssessment(data, total) {
+  var assets = ['cash', 'moneyFund', 'savingsPlan', 'bonds', 'trust', 'property', 'stocks', 'gold', 'alternatives', 'otherInvest'];
+  var highRisk = 0, midRisk = 0, lowRisk = 0;
+
+  assets.forEach(function(key) {
+    var val = parseFloat(data[key]) || 0;
+    var cfg = assetConfig[key];
+    if (cfg) {
+      if (cfg.risk === 'high') highRisk += val;
+      else if (cfg.risk === 'mid') midRisk += val;
+      else lowRisk += val;
+    }
+  });
+
+  // 确保 total 是有效数字
+  total = parseFloat(total) || 0;
+  
+  var highPct = total > 0 ? (highRisk / total * 100).toFixed(1) : 0;
+  var midPct = total > 0 ? (midRisk / total * 100).toFixed(1) : 0;
+  var lowPct = total > 0 ? (lowRisk / total * 100).toFixed(1) : 0;
+
+  // 确保百分比至少显示 0.0 而不是 0
+  highPct = highPct === 0 ? '0.0' : highPct;
+  midPct = midPct === 0 ? '0.0' : midPct;
+  lowPct = lowPct === 0 ? '0.0' : lowPct;
+
+  document.getElementById('high-risk-bar').style.width = highPct + '%';
+  document.getElementById('mid-risk-bar').style.width = midPct + '%';
+  document.getElementById('low-risk-bar').style.width = lowPct + '%';
+  document.getElementById('high-risk-pct').textContent = highPct + '%';
+  document.getElementById('mid-risk-pct').textContent = midPct + '%';
+  document.getElementById('low-risk-pct').textContent = lowPct + '%';
+
+  // 计算分散度评分
+  var diversityScore = calculateDiversityScore(assets, data, total);
+  document.getElementById('diversity-score').textContent = diversityScore;
+  var label = diversityScore >= 80 ? '优秀' : diversityScore >= 60 ? '良好' : diversityScore >= 40 ? '一般' : '需改善';
+  document.getElementById('diversity-label').textContent = '分散度 ' + label;
+}
+
+// 计算分散度评分
+function calculateDiversityScore(assets, data, total) {
+  var count = 0;
+  var weighted = 0;
+  // 确保 total 是有效数字
+  total = parseFloat(total) || 0;
+  
+  if (total <= 0) return 0;
+  
+  assets.forEach(function(key) {
+    var val = parseFloat(data[key]) || 0;
+    if (val > 0) {
+      count++;
+      var cfg = assetConfig[key];
+      if (!cfg) return;
+      var pct = val / total;
+      // 风险调整权重
+      var riskWeight = cfg.risk === 'high' ? 1.2 : cfg.risk === 'mid' ? 1.0 : 0.9;
+      weighted += pct * riskWeight * 100;
+    }
+  });
+
+  // 数量分数 (0-50) + 权重分数 (0-50)
+  var countScore = Math.min(count * 10, 50);
+  var weightScore = Math.min(weighted * 0.5, 50);
+  return Math.round(countScore + weightScore);
+}
+
+// 渲染收益分析
+function renderYieldAnalysis(data, total) {
+  var assets = ['cash', 'moneyFund', 'savingsPlan', 'bonds', 'trust', 'property', 'stocks', 'gold', 'alternatives', 'otherInvest'];
+  var lowYield = 0, midYield = 0, highYield = 0;
+
+  // 确保 total 是有效数字
+  total = parseFloat(total) || 0;
+
+  assets.forEach(function(key) {
+    var val = parseFloat(data[key]) || 0;
+    var cfg = assetConfig[key];
+    if (cfg && val > 0 && total > 0) {
+      var pct = val / total;
+      lowYield += cfg.yield.low * pct;
+      midYield += cfg.yield.mid * pct;
+      highYield += cfg.yield.high * pct;
+    }
+  });
+
+  var lowStr = total > 0 ? (lowYield * 100).toFixed(1) + '%' : '—';
+  var midStr = total > 0 ? (midYield * 100).toFixed(1) + '%' : '—';
+  var highStr = total > 0 ? (highYield * 100).toFixed(1) + '%' : '—';
+  
+  document.getElementById('yield-low').textContent = lowStr;
+  document.getElementById('yield-mid').textContent = midStr;
+  document.getElementById('yield-high').textContent = highStr;
+  document.getElementById('yield-weighted').textContent = total > 0 ? (midYield * 100).toFixed(1) + '% 年化' : '—';
+}
+
+// 生成投资建议
+function generatePortfolioAdvices(data, total) {
+  var advices = [];
+  var assets = ['cash', 'moneyFund', 'savingsPlan', 'bonds', 'trust', 'property', 'stocks', 'gold', 'alternatives', 'otherInvest'];
+
+  // 确保 total 是有效数字
+  total = parseFloat(total) || 0;
+  if (total <= 0) {
+    document.getElementById('portfolio-advices').innerHTML = '<div style="text-align:center;padding:30px;color:var(--text2)">暂无有效资产数据</div>';
+    return;
+  }
+
+  // 检查现金比例
+  // 流动性资产（现金+货币基金）
+  var cash = (parseFloat(data.cash) || 0) + (parseFloat(data.moneyFund) || 0);
+  var cashPct = cash / total;
+  if (cashPct < 0.05) {
+    advices.push({
+      icon: '⚠️',
+      type: 'critical',
+      title: '流动性资产不足',
+      desc: '建议保留至少 5-10% 的流动性资产作为应急备用金',
+      action: '可将部分活期存款转入货币基金（如余额宝）或短期理财产品，保持流动性的同时获得更高收益'
+    });
+  } else if (cashPct > 0.3) {
+    advices.push({
+      icon: '💡',
+      type: 'info',
+      title: '流动性资产偏高',
+      desc: '大量现金存在银行会造成收益损失，建议考虑低风险理财产品',
+      action: '可将超过6个月生活费的现金转为货币基金(2-3%/年)、定期理财(3-4%/年)或短期债券基金'
+    });
+  }
+  
+  // 检查货币基金配置
+  var moneyFund = parseFloat(data.moneyFund) || 0;
+  var moneyFundPct = moneyFund / total;
+  if (cash > 0 && moneyFundPct < 0.03 && cashPct > 0.05) {
+    advices.push({
+      icon: '💡',
+      type: 'info',
+      title: '建议配置货币基金',
+      desc: '活期存款可转为货币基金提高收益，同时保持流动性',
+      action: '可将活期存款转为余额宝、微信零钱通等货币基金，年化收益2-3%，随存随取'
+    });
+  }
+
+  // 检查股票比例
+  var stocks = parseFloat(data.stocks) || 0;
+  var stocksPct = stocks / total;
+  if (stocksPct > 0.5) {
+    advices.push({
+      icon: '⚠️',
+      type: 'critical',
+      title: '高风险资产过于集中',
+      desc: '股票类资产占比过高，建议分散到债券、黄金等低相关性资产',
+      action: '建议降低股票比例至30%以下，增加债券基金(20-30%)、黄金ETF(5-10%)进行对冲'
+    });
+  } else if (stocksPct > 0 && stocksPct < 0.1 && total > 200000) {
+    advices.push({
+      icon: '💡',
+      type: 'info',
+      title: '股票配置偏低',
+      desc: '建议适度参与权益类投资以获取长期增长收益',
+      action: '可考虑定投指数基金（如标普500 ETF、纳斯达克100 ETF），分散入场时间降低风险'
+    });
+  }
+
+  // 检查是否缺少保险规划
+  var savingsPlan = parseFloat(data.savingsPlan) || 0;
+  if (savingsPlan === 0 && total > 500000) {
+    advices.push({
+      icon: '💡',
+      type: 'info',
+      title: '建议配置储蓄型保险',
+      desc: '资产达到一定规模后，可考虑配置储蓄险进行风险对冲',
+      action: '推荐考虑香港/新加坡分红储蓄险(3.5-5%/年复利)或增额终身寿险，兼顾保障与储蓄功能'
+    });
+  } else if (savingsPlan === 0 && total < 500000 && total > 0) {
+    advices.push({
+      icon: '💡',
+      type: 'info',
+      title: '建议配置基础保障型保险',
+      desc: '在积累资产的同时，建议完善保障体系',
+      action: '优先配置医疗险、重疾险和定期寿险，确保意外不会影响家庭财务状况'
+    });
+  }
+
+  // 检查房产比例 - 只有当已有房产时才建议调整
+  var property = parseFloat(data.property) || 0;
+  var propertyPct = property / total;
+  if (property > 0 && propertyPct > 0.7) {
+    advices.push({
+      icon: '⚠️',
+      type: 'critical',
+      title: '房产占比过高',
+      desc: '房产流动性差，建议适当降低房产比例，增加金融资产配置',
+      action: '如有投资性房产可考虑出租提高租金回报率，或出售部分房产转入金融资产提高流动性'
+    });
+  } else if (property > 0 && propertyPct > 0.4) {
+    advices.push({
+      icon: '💡',
+      type: 'info',
+      title: '可考虑优化房产配置',
+      desc: '投资性房产占比偏高，建议适度分散到其他金融资产',
+      action: '可考虑将部分房产资产转化为租金回报率更高的理财产品或REITs基金，提高资产流动性'
+    });
+  }
+  // 注意：只有客户已有房产时才给出上述建议，没有房产时不建议新增投资性房产
+
+  // 检查黄金配置
+  var gold = parseFloat(data.gold) || 0;
+  var goldPct = gold / total;
+  if (goldPct < 0.03 && total > 100000) {
+    advices.push({
+      icon: '💡',
+      type: 'info',
+      title: '建议配置黄金',
+      desc: '作为避险资产，建议配置 3-5% 的黄金以对冲系统性风险',
+      action: '可通过黄金ETF（如518880）、纸黄金或实物金条形式配置，用于对冲股市大幅下跌风险'
+    });
+  }
+
+  // 检查债券配置
+  var bonds = parseFloat(data.bonds) || 0;
+  var bondsPct = bonds / total;
+  if (bondsPct < 0.1 && stocksPct > 0.3) {
+    advices.push({
+      icon: '💡',
+      type: 'info',
+      title: '建议增加债券配置',
+      desc: '股债平衡可有效降低投资组合波动',
+      action: '建议配置10-20%债券基金或国债，起到"稳定器"作用，在股市下跌时提供保护'
+    });
+  }
+  
+  // 检查私募/对冲基金配置 - 只有已有时才建议调整
+  var alternatives = parseFloat(data.alternatives) || 0;
+  var alternativesPct = alternatives / total;
+  if (alternatives > 0 && alternativesPct > 0.2) {
+    advices.push({
+      icon: '💡',
+      type: 'info',
+      title: '另类投资配置建议',
+      desc: '另类投资占比偏高，注意关注流动性风险',
+      action: '建议定期评估私募/对冲基金的业绩和流动性状况，确保符合投资周期预期'
+    });
+  }
+  
+  // 检查资产类别数量（分散度）
+  var assetCount = 0;
+  var assetKeys = ['cash', 'moneyFund', 'savingsPlan', 'bonds', 'trust', 'property', 'stocks', 'gold', 'alternatives', 'otherInvest'];
+  assetKeys.forEach(function(key) {
+    if ((parseFloat(data[key]) || 0) > 0) assetCount++;
+  });
+  if (assetCount < 4 && total > 300000) {
+    advices.push({
+      icon: '💡',
+      type: 'info',
+      title: '资产类别可更加多元化',
+      desc: '当前资产集中在少数类别，建议适当分散',
+      action: '可考虑增加不同类型的资产，如货币基金、债券基金或黄金，分散单一资产波动风险'
+    });
+  }
+
+  // 检查信托配置 - 只有已有信托资产或明确传承需求时才建议
+  var trust = parseFloat(data.trust) || 0;
+  var trustPct = trust / total;
+  if (trust > 0 && trustPct > 0.3) {
+    advices.push({
+      icon: '💡',
+      type: 'info',
+      title: '信托配置建议',
+      desc: '信托资产占比较高，建议关注信托产品的期限和收益结构',
+      action: '建议定期评估信托产品的业绩表现和受托人资质，确保符合预期的风险收益目标'
+    });
+  } else if (data.legacyWish === 'trust' && trust === 0 && total > 500000) {
+    advices.push({
+      icon: '🏛️',
+      type: 'info',
+      title: '建议设立信托架构',
+      desc: '有传承需求且资产规模已达到，建议完善法律架构',
+      action: '可咨询专业机构了解BVI/开曼/新加坡信托架构，资产越早进入保护效果越好'
+    });
+  }
+  // 注意：没有信托且无传承需求的客户，不建议新增配置信托资产
+
+  // 如果没有明显问题
+  if (advices.length === 0) {
+    advices.push({
+      icon: '✅',
+      type: 'good',
+      title: '资产配置较为合理',
+      desc: '您的资产配置结构均衡，风险分散度良好',
+      action: '建议每年做一次资产再平衡，保持各资产类别比例在目标范围内'
+    });
+  }
+
+  // 渲染建议
+  var html = '';
+  advices.forEach(function(a) {
+    var bg = a.type === 'critical' ? 'rgba(224,85,85,.1)' : a.type === 'good' ? 'rgba(62,207,142,.1)' : 'rgba(201,168,76,.1)';
+    var border = a.type === 'critical' ? 'rgba(224,85,85,.3)' : a.type === 'good' ? 'rgba(62,207,142,.3)' : 'rgba(201,168,76,.3)';
+    var actionBg = a.type === 'critical' ? 'rgba(224,85,85,.08)' : a.type === 'good' ? 'rgba(62,207,142,.08)' : 'rgba(201,168,76,.08)';
+    var labelColor = a.type === 'critical' ? 'var(--red)' : a.type === 'good' ? 'var(--green)' : 'var(--gold)';
+    html += '<div style="background:' + bg + ';border:1px solid ' + border + ';border-radius:10px;padding:14px;margin-bottom:12px">' +
+      '<div style="font-size:14px;font-weight:600;margin-bottom:8px">' + a.icon + ' ' + a.title + '</div>' +
+      '<div style="font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:10px">' + a.desc + '</div>' +
+      '<div style="background:' + actionBg + ';border-radius:8px;padding:10px 12px">' +
+        '<div style="font-size:11px;font-weight:600;color:' + labelColor + ';margin-bottom:4px">📌 具体建议</div>' +
+        '<div style="font-size:12px;color:var(--text);line-height:1.6">' + (a.action || '维持现状即可') + '</div>' +
+      '</div>' +
+    '</div>';
+  });
+  document.getElementById('portfolio-advices').innerHTML = html;
+}
+
+// 格式化货币
+function fmtMoney(n, currency) {
+  var s = currency || 'USD';
+  var symbol = s === 'USD' ? '$' : s === 'HKD' ? 'HK$' : s === 'CNY' ? '¥' : s === 'SGD' ? 'S$' : '$';
+  return symbol + (n || 0).toLocaleString();
+}
+
+// 保存分析结果
+function savePortfolioAnalysis() {
+  var cid = document.getElementById('client-select').value;
+  if (!cid) {
+    toast('请先选择客户', 'warn');
+    return;
+  }
+  
+  // 收集当前分析结果
+  var analysisData = {
+    date: document.getElementById('analysis-date').value,
+    totalAssets: document.getElementById('total-assets').textContent,
+    diversityScore: document.getElementById('diversity-score').textContent,
+    yieldLow: document.getElementById('yield-low').textContent,
+    yieldMid: document.getElementById('yield-mid').textContent,
+    yieldHigh: document.getElementById('yield-high').textContent,
+    yieldWeighted: document.getElementById('yield-weighted').textContent,
+    savedAt: new Date().toISOString()
+  };
+  
+  // 保存到客户档案
+  if (saveAnalysisResult(cid, 'portfolio', analysisData)) {
+    toast('投资组合分析已保存到客户档案');
+  } else {
+    toast('保存失败', 'error');
+  }
+}
+
+// Toast 提示
+function toast(msg, type) {
+  type = type || 'info';
+  var color = type === 'error' ? '#e05555' : type === 'warn' ? '#f59e0b' : '#3ecf8e';
+  var el = document.createElement('div');
+  el.style.cssText = 'position:fixed;top:80px;right:20px;background:' + color + ';color:#fff;padding:12px 20px;border-radius:8px;z-index:10000;font-size:13px;animation:fadeIn .3s';
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(function() { el.remove(); }, 3000);
+}
+</script>
+</body>
+</html>
