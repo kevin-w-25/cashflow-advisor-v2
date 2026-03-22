@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>现金流规划助手 · 场景模拟</title>
+<link rel="stylesheet" href="assets/style.css"/>
+</head>
+<body>
+
+<nav class="nav">
+  <a class="nav-brand" href="index.html">
+    <div class="nav-logo">💎</div>
+    <span class="nav-title">现金流规划助手</span>
+  </a>
+  <div class="nav-links">
+    <a class="nav-link" data-page="index" href="index.html">🏠 首页</a>
+    <a class="nav-link" data-page="clients" href="clients.html">📋 客户档案</a>
+    <a class="nav-link" data-page="comparison" href="comparison.html">📈 历史对比</a>
+    <a class="nav-link" data-page="planner" href="planner.html">📊 开始分析</a>
+    <a class="nav-link" data-page="monthly" href="monthly.html">📅 月度对账</a>
+    <a class="nav-link active" data-page="scenarios" href="scenarios.html">🔮 场景模拟</a>
+  </div>
+</nav>
+
+<div class="main" style="max-width:900px">
+
+  <div class="page-header">
+    <div class="page-title">🔮 场景模拟</div>
+    <div class="page-sub">模拟不同财务场景，评估决策影响，辅助规划未来</div>
+  </div>
+
+  <!-- 选择客户 -->
+  <div class="card gb" style="margin-bottom:20px">
+    <div class="frow">
+      <div class="fg">
+        <label>选择客户档案</label>
+        <select id="sel-client">
+          <option value="">— 选择已有客户（加载当前数据）—</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label>选择模拟场景</label>
+        <select id="sel-scenario" onchange="switchScenario()">
+          <option value="salary">💰 加薪场景</option>
+          <option value="retire">🏝️ 提前退休场景</option>
+          <option value="big-expense">🏠 大额支出场景</option>
+          <option value="investment">📈 投资收益变化</option>
+          <option value="inflation">📉 通胀影响分析</option>
+        </select>
+      </div>
+      <div class="fg" style="align-self:flex-end">
+        <button class="btn btn-gold" onclick="loadScenario()">加载并模拟</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 场景参数 -->
+  <div id="scenario-panel" class="card gb" style="margin-bottom:20px">
+    <div class="card-title"><span class="ico" id="scene-icon">💰</span> <span id="scene-title">加薪场景</span></div>
+    <div id="scene-desc" style="font-size:13px;color:var(--text2);margin-bottom:20px;line-height:1.7"></div>
+    <div id="scene-params" style="margin-bottom:20px"></div>
+    <div style="display:flex;justify-content:flex-end">
+      <button class="btn btn-gold" onclick="runSimulation()">▶ 运行模拟</button>
+    </div>
+  </div>
+
+  <!-- 模拟结果 -->
+  <div id="result-panel" style="display:none" class="card gb">
+    <div class="card-title"><span class="ico">📊</span> 模拟结果对比</div>
+    <div id="result-content"></div>
+  </div>
+
+  <!-- 预设场景说明 -->
+  <div class="card gb" style="margin-top:20px">
+    <div class="card-title"><span class="ico">💡</span> 场景说明</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;font-size:12px;color:var(--text2);line-height:1.8">
+      <div>
+        <div style="font-weight:600;color:var(--gold);margin-bottom:8px">💰 加薪场景</div>
+        模拟月收入增加一定比例后，对结余、储蓄率、退休规划的影响。
+      </div>
+      <div>
+        <div style="font-weight:600;color:var(--gold);margin-bottom:8px">🏝️ 提前退休场景</div>
+        模拟提前N年退休所需的额外资金储备，以及每月被动收入需求变化。
+      </div>
+      <div>
+        <div style="font-weight:600;color:var(--gold);margin-bottom:8px">🏠 大额支出场景</div>
+        模拟如房屋装修、医疗等大额支出对资产配置和退休计划的影响。
+      </div>
+      <div>
+        <div style="font-weight:600;color:var(--gold);margin-bottom:8px">📈 投资收益变化</div>
+        模拟投资组合年化收益率变化（如5%→8%）对未来财富积累的影响。
+      </div>
+      <div>
+        <div style="font-weight:600;color:var(--gold);margin-bottom:8px">📉 通胀影响分析</div>
+        模拟不同通胀率（2%-5%）下，未来购买力变化和退休资金需求调整。
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="assets/app.js"></script>
+<script src="assets/storage.js"></script>
+<script>
+// 工具函数已在 app.js 中定义
+
+let baseData = null;
+
+document.addEventListener('DOMContentLoaded', () => {
+  console.log('scenarios DOMContentLoaded');
+  const clients = typeof loadAllClients === 'function' ? loadAllClients() : [];
+  console.log('loadAllClients result:', clients);
+  console.log('loadAllClients type:', typeof loadAllClients);
+  const sel = el('sel-client');
+  clients.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c.id;
+    opt.textContent = c.name + '（' + (c.age || '') + '岁）';
+    sel.appendChild(opt);
+  });
+  switchScenario();
+});
+
+const scenarioConfig = {
+  salary: {
+    icon: '💰', title: '加薪场景',
+    desc: '模拟月收入增加一定比例后，对月度结余、储蓄率、退休规划的影响。了解加薪后多久可以实现财务目标。',
+    params: [
+      { id: 's-increase', label: '加薪幅度', unit: '%', defaultVal: 20, min: 5, max: 100 }
+    ]
+  },
+  retire: {
+    icon: '🏝️', title: '提前退休场景',
+    desc: '模拟提前N年退休所需的额外资金储备，以及退休后每月被动收入需求变化。了解提前退休的实际成本。',
+    params: [
+      { id: 's-years', label: '提前退休年数', unit: '年', defaultVal: 5, min: 1, max: 15 },
+      { id: 's-expense', label: '退休后期望月支出变化', unit: '%', defaultVal: 80, min: 50, max: 120 }
+    ]
+  },
+  'big-expense': {
+    icon: '🏠', title: '大额支出场景',
+    desc: '模拟如房屋装修、医疗、教育等大额支出对资产配置和退休计划的影响。了解这笔支出是否会影响退休目标。',
+    params: [
+      { id: 's-amount', label: '大额支出金额', unit: '', defaultVal: 500000, min: 50000, max: 10000000, step: 50000 },
+      { id: 's-source', label: '资金来源', type: 'select', options: [
+        { value: 'cash', text: '动用流动现金' },
+        { value: 'stocks', text: '变现股票/基金' },
+        { value: 'savings', text: '动用储蓄险' },
+        { value: 'loan', text: '贷款（新增负债）' }
+      ]}
+    ]
+  },
+  investment: {
+    icon: '📈', title: '投资收益变化',
+    desc: '模拟投资组合年化收益率变化对未来财富积累的影响。比如从5%提升到8%，30年后资产差距会有多大？',
+    params: [
+      { id: 's-current-yield', label: '当前年化收益率', unit: '%', defaultVal: 5, min: 1, max: 15 },
+      { id: 's-new-yield', label: '新收益率假设', unit: '%', defaultVal: 8, min: 1, max: 15 },
+      { id: 's-years', label: '投资年限', unit: '年', defaultVal: 20, min: 5, max: 40 }
+    ]
+  },
+  inflation: {
+    icon: '📉', title: '通胀影响分析',
+    desc: '模拟不同通胀率对未来购买力和退休资金需求的影响。了解在不同通胀环境下需要多少资金才能维持相同生活水平。',
+    params: [
+      { id: 's-rate', label: '假设年通胀率', unit: '%', defaultVal: 3, min: 1, max: 8 }
+    ]
+  }
+};
+
+function switchScenario() {
+  const key = el('sel-scenario').value;
+  const cfg = scenarioConfig[key];
+  el('scene-icon').textContent = cfg.icon;
+  el('scene-title').textContent = cfg.title;
+  el('scene-desc').textContent = cfg.desc;
+  renderParams(cfg.params);
+}
+
+function renderParams(params) {
+  const container = el('scene-params');
+  container.innerHTML = '<div class="grid2">' + params.map(p => {
+    if (p.type === 'select') {
+      return `
+        <div class="fg">
+          <label>${p.label}</label>
+          <select id="${p.id}">
+            ${p.options.map(o => `<option value="${o.value}">${o.text}</option>`).join('')}
+          </select>
+        </div>`;
+    }
+    return `
+      <div class="fg">
+        <label>${p.label}</label>
+        <div class="unit">
+          <input type="number" id="${p.id}" value="${p.defaultVal}" min="${p.min || 0}" max="${p.max || ''}" step="${p.step || 1}"/>
+          <span class="uf">${p.unit}</span>
+        </div>
+      </div>`;
+  }).join('') + '</div>';
+}
+
+function loadScenario() {
+  const cid = el('sel-client').value;
+  if (!cid) { toast('请先选择客户档案', 'error'); return; }
+  const client = typeof loadClientData === 'function' ? loadClientData(cid) : null;
+  if (!client) { toast('未找到该客户', 'error'); return; }
+  // 使用 raw 数据（原始输入数据）用于模拟
+  baseData = client.raw || client;
+  toast('已加载 ' + client.name + ' 的数据');
+}
+
+function runSimulation() {
+  if (!baseData) { toast('请先选择客户并加载数据', 'error'); return; }
+  const key = el('sel-scenario').value;
+  const scenarios = {
+    salary: simSalary,
+    retire: simRetire,
+    'big-expense': simBigExpense,
+    investment: simInvestment,
+    inflation: simInflation
+  };
+  const result = scenarios[key] ? scenarios[key]() : null;
+  if (result) {
+    renderResult(result);
+  }
+}
+
+// ── 场景模拟函数 ──
+function simSalary() {
+  const increase = g('s-increase') / 100;
+  const c = baseData.currency || 'CNY';
+  const baseIncome = (baseData.activeIncome || 0) + (baseData.passiveIncome || 0);
+  const newIncome = baseIncome * (1 + increase);
+  const baseSurplus = baseIncome - ((baseData.essentialExp || 0) + (baseData.flexExp || 0) + (baseData.premiumExp || 0) + (baseData.debtExp || 0));
+  const newSurplus = newIncome - ((baseData.essentialExp || 0) + (baseData.flexExp || 0) + (baseData.premiumExp || 0) + (baseData.debtExp || 0));
+  const monthlyDiff = newSurplus - baseSurplus;
+  const retireGap = Math.max(0, (baseData.retireNeed || 0) - newIncome * 0.4);
+
+  return {
+    type: 'salary',
+    sections: [
+      {
+        title: '月度变化', items: [
+          { label: '当前月收入', base: fmt(baseIncome, c), new: fmt(newIncome, c) },
+          { label: '月收入增加', base: '-', new: fmt(newIncome - baseIncome, c) },
+          { label: '当前月度结余', base: fmt(baseSurplus, c), new: fmt(newSurplus, c) },
+          { label: '结余增加', base: '-', new: fmt(monthlyDiff, c) },
+          { label: '加薪后新储蓄率', base: pct(baseIncome > 0 ? baseSurplus / baseIncome : 0), new: pct(newIncome > 0 ? newSurplus / newIncome : 0) },
+        ]
+      },
+      {
+        title: '长期影响', items: [
+          { label: `月增结余 × 12 = 年增结余`, base: '-', new: fmt(monthlyDiff * 12, c) },
+          { label: '5年额外积累', base: '-', new: fmt(monthlyDiff * 12 * 5, c) },
+          { label: '10年额外积累', base: '-', new: fmt(monthlyDiff * 12 * 10, c) },
+          { label: '退休收入缺口改善', base: '-', new: retireGap > 0 ? fmt(baseData.retireGap - retireGap, c) + ' /月' : '已达标 ✅' },
+        ]
+      }
+    ]
+  };
+}
+
+function simRetire() {
+  const yearsEarly = g('s-years');
+  const expenseRatio = g('s-expense') / 100;
+  const c = baseData.currency || 'CNY';
+  const age = baseData.age || 45;
+  const newRetireAge = Math.max(age + 1, (baseData.retireAge || 60) - yearsEarly);
+  const yearsToNew = Math.max(0, newRetireAge - age);
+  const currentNeed = baseData.retireNeed || ((baseData.essentialExp || 0) + (baseData.flexExp || 0)) * expenseRatio;
+  const newNeed = currentNeed * expenseRatio;
+  const newGap = Math.max(0, newNeed - (baseData.passiveIncome || 0));
+  const capNeeded = newGap * 12 / 0.04;
+  const monthlyInvest = yearsToNew > 0 ? capNeeded / (yearsToNew * 12) : 0;
+
+  return {
+    type: 'retire',
+    sections: [
+      {
+        title: '退休时间变化', items: [
+          { label: '原计划退休年龄', base: (baseData.retireAge || 60) + '岁', new: newRetireAge + '岁' },
+          { label: '距退休年数（原）', base: Math.max(0, (baseData.retireAge || 60) - age) + '年', new: yearsToNew + '年' },
+        ]
+      },
+      {
+        title: '资金需求变化', items: [
+          { label: '退休后期望月支出', base: fmt(currentNeed, c), new: fmt(newNeed, c) },
+          { label: '当前被动收入', base: fmt(baseData.passiveIncome || 0, c) + '/月', new: fmt(baseData.passiveIncome || 0, c) + '/月' },
+          { label: '被动收入缺口', base: fmt(baseData.retireGap || 0, c) + '/月', new: fmt(newGap, c) + '/月' },
+          { label: '需积累资金（按4%法则）', base: fmt(baseData.retireCapNeeded || 0, c), new: fmt(capNeeded, c) },
+          { label: '每年需额外投入', base: fmt(baseData.yearsToRetire > 0 ? (baseData.retireCapNeeded || 0) / (baseData.yearsToRetire * 12) : 0, c), new: fmt(monthlyInvest, c) },
+        ]
+      }
+    ]
+  };
+}
+
+function simBigExpense() {
+  const amount = g('s-amount');
+  const source = el('s-source')?.value || 'cash';
+  const c = baseData.currency || 'CNY';
+  const cash = baseData.cash || 0;
+  const stocks = baseData.stocks || 0;
+  const savingsPlan = baseData.savingsPlan || 0;
+  const totalAssets = (baseData.cash || 0) + (baseData.savingsPlan || 0) + (baseData.trust || 0) + (baseData.property || 0) + (baseData.stocks || 0) + (baseData.gold || 0);
+  const monthlyExp = (baseData.essentialExp || 0) + (baseData.flexExp || 0) + (baseData.premiumExp || 0) + (baseData.debtExp || 0);
+  const monthlyIncome = (baseData.activeIncome || 0) + (baseData.passiveIncome || 0);
+  const baseSurplus = monthlyIncome - monthlyExp;
+  const baseEmergency = totalAssets > 0 ? cash / ((baseData.essentialExp || 0) * (baseData.emergencyMonths || 6)) : 2;
+
+  let newCash = cash, newStocks = stocks, newSavingsPlan = savingsPlan, newDebt = 0;
+  let sourceName = '动用流动现金';
+  if (source === 'cash') { newCash = Math.max(0, cash - amount); sourceName = '变现流动现金'; }
+  else if (source === 'stocks') { newStocks = Math.max(0, stocks - amount); sourceName = '变现股票/基金'; }
+  else if (source === 'savings') { newSavingsPlan = Math.max(0, savingsPlan - amount); sourceName = '动用储蓄险（可能损失收益）'; }
+  else if (source === 'loan') { newDebt = amount; sourceName = '新增贷款（月还款约' + fmt(amount * 0.05 / 12, c) + '）'; }
+
+  const newTotalAssets = (newCash || 0) + (newSavingsPlan || 0) + (baseData.trust || 0) + (baseData.property || 0) + (newStocks || 0) + (baseData.gold || 0) - newDebt;
+  const newEmergency = newCash > 0 ? newCash / ((baseData.essentialExp || 0) * (baseData.emergencyMonths || 6)) : 0;
+  const monthlySurplusLoss = source === 'loan' ? amount * 0.05 / 12 : 0;
+  const newSurplus = Math.max(0, baseSurplus - monthlySurplusLoss);
+
+  return {
+    type: 'big-expense',
+    sections: [
+      {
+        title: '资金来源与影响', items: [
+          { label: '大额支出金额', base: '-', new: fmt(amount, c) },
+          { label: '资金来源', base: '-', new: sourceName },
+          { label: '动用后流动现金', base: fmt(cash, c), new: fmt(newCash || 0, c) },
+          { label: '动用后股票资产', base: fmt(stocks, c), new: fmt(newStocks || 0, c) },
+        ]
+      },
+      {
+        title: '财务指标变化', items: [
+          { label: '总资产变化', base: fmt(totalAssets, c), new: fmt(newTotalAssets, c) },
+          { label: '紧急预备金覆盖', base: (baseEmergency * 100).toFixed(0) + '%', new: (newEmergency * 100).toFixed(0) + '%' },
+          { label: '月度结余（减少）', base: fmt(baseSurplus, c), new: fmt(newSurplus, c) + (monthlySurplusLoss > 0 ? '（贷款月供' + fmt(monthlySurplusLoss, c) + '）' : '') },
+          { label: '对退休计划影响', base: '-', new: newEmergency < 0.5 ? '⚠️ 紧急预备金严重不足' : '✅ 影响可控' },
+        ]
+      }
+    ]
+  };
+}
+
+function simInvestment() {
+  const currYield = g('s-current-yield') / 100;
+  const newYield = g('s-new-yield') / 100;
+  const years = g('s-years');
+  const c = baseData.currency || 'CNY';
+  const investable = (baseData.stocks || 0) + (baseData.cash || 0) * 0.5;
+  const annualInvest = Math.max(0, (baseData.monthlySurplus || 0) * 12 * 0.5);
+  const currValue = investable * Math.pow(1 + currYield, years) + annualInvest * ((Math.pow(1 + currYield, years) - 1) / currYield);
+  const newValue = investable * Math.pow(1 + newYield, years) + annualInvest * ((Math.pow(1 + newYield, years) - 1) / newYield);
+  const yieldDiff = newYield - currYield;
+  const valueDiff = newValue - currValue;
+  const monthlyIncome = (newYield > 0) ? newValue * newYield / 12 : 0;
+
+  return {
+    type: 'investment',
+    sections: [
+      {
+        title: `${years}年后资产对比`, items: [
+          { label: '当前年化收益率', base: (currYield * 100).toFixed(1) + '%', new: (newYield * 100).toFixed(1) + '%' },
+          { label: `${years}年后总资产（当前策略）`, base: fmt(currValue, c), new: fmt(newValue, c) },
+          { label: '收益率提升收益差距', base: '-', new: '💰 ' + fmt(valueDiff, c) },
+          { label: '新策略月被动收入（4%法则）', base: '-', new: fmt(monthlyIncome, c) + '/月' },
+        ]
+      }
+    ]
+  };
+}
+
+function simInflation() {
+  const rate = g('s-rate') / 100;
+  const c = baseData.currency || 'CNY';
+  const monthlyExp = (baseData.essentialExp || 0) + (baseData.flexExp || 0);
+  const yearsToRetire = Math.max(1, (baseData.retireAge || 60) - (baseData.age || 45));
+  const futureExpenses = monthlyExp * Math.pow(1 + rate, yearsToRetire);
+  const futureNeed = futureExpenses * 12 / 0.04;
+  const baseNeed = monthlyExp * 12 / 0.04;
+  const extraNeeded = futureNeed - baseNeed;
+  const monthlyInflationLoss = monthlyExp - monthlyExp / Math.pow(1 + rate, yearsToRetire);
+
+  return {
+    type: 'inflation',
+    sections: [
+      {
+        title: '通胀影响分析', items: [
+          { label: '假设年通胀率', base: '-', new: (rate * 100).toFixed(1) + '%' },
+          { label: '当前月支出', base: fmt(monthlyExp, c), new: fmt(futureExpenses, c) + '（' + yearsToRetire + '年后等效）' },
+          { label: '退休资金需求（4%法则）', base: fmt(baseNeed, c), new: fmt(futureNeed, c) },
+          { label: '需额外储备', base: '-', new: '⚠️ ' + fmt(extraNeeded, c) },
+          { label: '每年购买力损失（等效）', base: '-', new: fmt(monthlyInflationLoss * 12, c) + '/年' },
+        ]
+      }
+    ]
+  };
+}
+
+function renderResult(result) {
+  const panel = el('result-panel');
+  panel.style.display = 'block';
+  panel.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      ${result.sections.map(sec => `
+        <div style="padding:16px;background:var(--dark3);border-radius:12px">
+          <div style="font-size:13px;font-weight:700;color:var(--gold);margin-bottom:14px">${sec.title}</div>
+          ${sec.items.map(item => `
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border2);font-size:12px">
+              <span style="color:var(--text2)">${item.label}</span>
+              <div style="text-align:right">
+                ${item.base !== '-' ? `<div style="color:var(--text3);font-size:11px">原：${item.base}</div>` : ''}
+                <div style="font-weight:700;color:${item.base === item.new ? 'var(--text2)' : 'var(--gold)'}">${item.new}</div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `).join('')}
+    </div>
+
+    <div style="margin-top:16px;padding:14px;background:rgba(201,168,76,0.06);border:1px solid rgba(201,168,76,0.2);border-radius:10px;font-size:12px;color:var(--text2);line-height:1.8">
+      💡 <strong style="color:var(--gold)">模拟说明：</strong>以上结果基于当前数据和参数假设计算，实际结果会因市场变化、个人决策等因素有所不同。建议结合实际情况综合判断，并咨询专业人士。
+    </div>
+  `;
+}
+
+function pct(n) { return (n * 100).toFixed(1) + '%'; }
+
+// 初始化导航高亮
+initNav('scenarios');
+</script>
+</body>
+</html>
